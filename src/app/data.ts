@@ -1,0 +1,16 @@
+export  default  [
+    {"value":"exp"},
+    {"value":"acos"},
+    {"value":"acosh"},
+    {"value":"asin"},
+    {"value":"asinh"},
+    {"value":"atan"},
+    {"value":"atanh"},
+    {"value":"cos"},
+    {"value":"cosh"},
+    {"value":"log"},
+    {"value":"sin"},
+    {"value":"sinh"},
+    {"value":"sqrt"},
+    {"value":"tan"},
+    {"value":"tanh"}]

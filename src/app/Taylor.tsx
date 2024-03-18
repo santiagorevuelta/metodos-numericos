@@ -1,10 +1,11 @@
 "use client"
 import React, {useState} from 'react';
-import {Col, Form, Row, Table} from "react-bootstrap";
+import {Col, Form, InputGroup, Row, Table} from "react-bootstrap";
 import {toast} from 'react-toastify';
 import * as math from 'mathjs'
 import {MathJax, MathJaxContext} from "better-react-mathjax";
-
+import data from '@/app/data'
+import {Button} from "@restart/ui";
 
 function PolinomioTaylor() {
     const [pasos, setPasos] = useState([{
@@ -21,6 +22,7 @@ function PolinomioTaylor() {
     const [error, setError] = useState('0');
     const [terminoFinal, setTerminoFinal] = useState('');
     const [formulaFinal, setFormulaFinal] = useState('');
+    const [verLista, setVerLista] = useState(false);
     const config = {
         loader: { load: ["input/asciimath"] }
     };
@@ -129,13 +131,28 @@ function PolinomioTaylor() {
             </Row>
             <Row>
                 <Col>
-                    <Form.Label htmlFor="f">Funcion</Form.Label>
-                    <Form.Control
-                        type="text"
-                        id="f"
-                        value={funcion}
-                        onChange={(e) => setFuncion(e.target.value)}
-                    />
+                    <Form.Label htmlFor="f">{verLista?'Seleccione la función':'Escriba la función'}</Form.Label>
+                    <InputGroup>
+                        {verLista ? (<Form.Select aria-label="Default select example"
+                                     value={funcion}
+                                     onChange={(e) => setFuncion(e.target.value)}>
+                            {data.map(item=>(<option value={item.value}>{item.value}</option>))}
+                        </Form.Select>):(
+                            <Form.Control
+                                type="text"
+                                value={funcion}
+                                onChange={(e) => setFuncion(e.target.value)}
+                                id="f"
+                            />
+                        )}
+                        <Button className={'btn btn-dark'} id="bti" onClick={()=>{
+                            setFuncion('exp')
+                            setVerLista(!verLista)
+                        }}>
+                            {verLista?'Ocultar':'Ver lista'}
+                        </Button>
+                    </InputGroup>
+
                 </Col>
                 <Col>
                     <Form.Label htmlFor="p">Valor de x</Form.Label>
