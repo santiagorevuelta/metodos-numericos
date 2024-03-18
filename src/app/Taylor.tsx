@@ -17,16 +17,14 @@ function PolinomioTaylor() {
         isT: false,
     }]);
     const [funcion, setFuncion] = useState('exp(x)');
-    const [punto, setPunto] = useState(0);
+    const [punto, setPunto] = useState('0');
     const [error, setError] = useState('0');
-    const [formula, setFormula] = useState('');
     const [terminoFinal, setTerminoFinal] = useState('');
     const config = {
         loader: { load: ["input/asciimath"] }
     };
 
     const calcularTaylor = () => {
-        setFormula('')
         setPasos([]);
        try {
            // @ts-ignore
@@ -50,14 +48,14 @@ function PolinomioTaylor() {
                Acum = 0
                EA = 0
                if (i == 1) {
-                   EA = Math.exp(punto) - i
+                   EA = Math.exp(Number(punto)) - i
                    Acum = i
                } else {
                    let sum = parseFloat(String(punto))
                    if (i > 2) sum = sum - parseFloat(String(punto))
-                   sum += _paso[_paso.length - 1].polinomio + (Math.pow(punto, i) / math.factorial(i))
+                   sum += _paso[_paso.length - 1].polinomio + (Math.pow(Number(punto), i) / math.factorial(i))
                    Acum = sum
-                   EA = Math.exp(punto) - sum;
+                   EA = Math.exp(Number(punto)) - sum;
                }
 
                if (EA < parseFloat(String(error))) {
@@ -70,14 +68,14 @@ function PolinomioTaylor() {
                    polinomio: Acum,
                    valorAproximado: !encontrado ? `EA > Tolerancia` : `EA < Tolerancia`,
                    errorAbsoluto: EA,
-                   errorPorcentual: Math.abs(EA)/ Math.exp(punto) * 100,
+                   errorPorcentual: Math.abs(EA)/ Math.exp(Number(punto)) * 100,
                    isT: encontrado,
                })
                i++
            }
            //Para calcular el ultimo termino
-           Acum = _paso[_paso.length - 1].polinomio + (Math.pow(punto, i) / math.factorial(i))
-           EA = Math.exp(punto) - Acum;
+           Acum = _paso[_paso.length - 1].polinomio + (Math.pow(Number(punto), i) / math.factorial(i))
+           EA = Math.exp(Number(punto)) - Acum;
 
            _paso.push({
                x: i,
@@ -85,12 +83,10 @@ function PolinomioTaylor() {
                polinomio: Acum,
                valorAproximado: !encontrado ? `EA > Tolerancia` : `EA < Tolerancia`,
                errorAbsoluto: EA,
-               errorPorcentual: Math.abs(EA) / Math.exp(punto) * 100,
+               errorPorcentual: Math.abs(EA) / Math.exp(Number(punto)) * 100,
                isT: false,
            })
 
-           let _formula = calcularFormula(i)
-           setFormula(_formula)
            // @ts-ignore
            setPasos(_paso);
            toast.success('Evaluado!');
@@ -98,7 +94,7 @@ function PolinomioTaylor() {
            toast.warning('Ocurrió un error general');
        }
     };
-
+/*
     function calcularFormula(n: number) {
         let _formula = '1 + x ';
         for (let i = 1; i < n; i++) {
@@ -111,7 +107,7 @@ function PolinomioTaylor() {
         }
         _formula += `\\approx \\sum_{i=1}^n \\frac{x^i}{i!}`
         return `$$e^x \\approx ${_formula}$$`
-    }
+    }*/
 
     return (
         <div>
@@ -148,8 +144,7 @@ function PolinomioTaylor() {
                 <Col sm={4} style={{display:'flex',justifyContent:'space-between'}}>
                     <button className={'btn btn-primary'} onClick={calcularTaylor}>Evaluar</button>
                     <button className={'btn btn-secondary'} onClick={()=>{
-                        setFormula('')
-                        setPunto(0)
+                        setPunto('0')
                         setError('0')
                         setPasos([])
                         setTerminoFinal('')
@@ -163,11 +158,10 @@ function PolinomioTaylor() {
                 </Col>
             </Row>
             <Row className={'mt-4 justify-content-center'}>
-                {formula !== '' && (
-                    <MathJaxContext config={config}>
-                        <span>Formula taylor</span>
-                        <MathJax>{`$$e^x \\approx 1 + x +\\frac{x^1}{1!}+\\frac{x^2}{2!}+\\frac{x^3}{3!}+\\frac{x^4}{4!}+...+\\frac{x^n}{n!}\\approx \\sum_{i=1}^n \\frac{x^i}{i!}$$`}</MathJax>
-                    </MathJaxContext>)}
+                <MathJaxContext config={config}>
+                    <span>Formula taylor</span>
+                    <MathJax>{`$$e^x \\approx 1 + x +\\frac{x^1}{1!}+\\frac{x^2}{2!}+\\frac{x^3}{3!}+\\frac{x^4}{4!}+...+\\frac{x^n}{n!}\\approx \\sum_{i=1}^n \\frac{x^i}{i!}$$`}</MathJax>
+                </MathJaxContext>
             </Row>
             <br/>
             <Table>
