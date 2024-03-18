@@ -1,7 +1,7 @@
 "use client"
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {Col, Form, Row, Table} from "react-bootstrap";
-import { toast } from 'react-toastify';
+import {toast} from 'react-toastify';
 import * as math from 'mathjs'
 import {MathJax, MathJaxContext} from "better-react-mathjax";
 
@@ -24,7 +24,7 @@ function PolinomioTaylor() {
 
     const calcularTaylor = () => {
         // @ts-ignore
-        if (funcion === '' ||  error === 0 || error === '0') {
+        if (funcion === '' || error === 0 || error === '0') {
             return toast.warning('Algunos valores no pueden estar en cero!');
         }
         const _paso = [{
@@ -39,59 +39,64 @@ function PolinomioTaylor() {
         let i = 1
         let encontrado = false
         let Acum = 0
-        let EA =  0
-        while (!encontrado){
+        let EA = 0
+        while (!encontrado) {
             Acum = 0
-            EA =  0
-            if(i == 1){
-                EA = Math.exp(punto)-i
+            EA = 0
+            if (i == 1) {
+                EA = Math.exp(punto) - i
                 Acum = i
-            }else{
+            } else {
                 let sum = parseFloat(String(punto))
-                if(i > 2) sum = sum-parseFloat(String(punto))
-                sum += _paso[_paso.length-1].polinomio+(Math.pow(punto, i)/math.factorial(i))
+                if (i > 2) sum = sum - parseFloat(String(punto))
+                sum += _paso[_paso.length - 1].polinomio + (Math.pow(punto, i) / math.factorial(i))
                 Acum = sum
-                EA = Math.exp(punto)-sum;
+                EA = Math.exp(punto) - sum;
             }
 
-            if(EA < parseFloat(String(error))){
+            if (EA < parseFloat(String(error))) {
                 encontrado = !encontrado
             }
             _paso.push({
                 x: i,
                 termino: `\\(\\frac{e^x (e)}{${i}!}* (x - ${punto})^${i} = \\frac{(e)}{${i}}(x - 1)^${i}\\)`,
                 polinomio: Acum,
-                valorAproximado: !encontrado?`EA > Tolerancia`:`EA < Tolerancia`,
+                valorAproximado: !encontrado ? `EA > Tolerancia` : `EA < Tolerancia`,
                 errorAbsoluto: EA,
-                errorPorcentual: 0,
+                errorPorcentual: Math.abs((EA) / Math.exp(punto)) * 100,
                 isT: encontrado,
             })
             i++
         }
+        //Para calcular el ultimo termino
+        Acum = _paso[_paso.length - 1].polinomio + (Math.pow(punto, i) / math.factorial(i))
+        EA = Math.exp(punto) - Acum;
+
         _paso.push({
             x: i,
             termino: `\\(\\frac{e^x (e)}{${i}!}* (x - ${punto})^${i} = \\frac{(e)}{${i}}(x - 1)^${i}\\)`,
             polinomio: Acum,
-            valorAproximado: !encontrado?`EA > Tolerancia`:`EA < Tolerancia`,
+            valorAproximado: !encontrado ? `EA > Tolerancia` : `EA < Tolerancia`,
             errorAbsoluto: EA,
-            errorPorcentual: 0,
+            errorPorcentual: Math.abs((EA) / Math.exp(punto)) * 100,
             isT: false,
         })
 
         let _formula = calcularFormula(i)
-        setFormula( _formula)
+        setFormula(_formula)
         // @ts-ignore
         setPasos(_paso);
         toast.success('Evaluado!');
     };
+
     function calcularFormula(n: number) {
-        let  _formula = '1 + x ';
+        let _formula = '1 + x ';
         for (let i = 1; i < n; i++) {
-            if(i <= 4){
+            if (i <= 4) {
                 _formula += `+\\frac{x^${i}}{${i}!}`
             }
         }
-        if(n > 4){
+        if (n > 4) {
             _formula += `+...+\\frac{x^n}{n!}`
         }
         _formula += `\\approx \\sum_{i=1}^n \\frac{x^i}{i!}`
@@ -135,12 +140,12 @@ function PolinomioTaylor() {
                     <button className={'btn btn-primary'} onClick={calcularTaylor}>Evaluar</button>
                 </Col>
             </Row>
-            <Row className={'mt-4'}>
-                <MathJaxContext>
-                    <MathJax>{formula}</MathJax>
-                </MathJaxContext>
+            <Row className={'mt-4 justify-content-center'}>
+                {formula !== '' && (
+                    <MathJaxContext>
+                        <MathJax>{formula}</MathJax>
+                    </MathJaxContext>)}
             </Row>
-
             <br/>
             <Table>
                 <thead>
@@ -149,23 +154,23 @@ function PolinomioTaylor() {
                     <th>Polinomio de Taylor</th>
                     <th>E Absoluto</th>
                     <th>Error</th>
-                    <th>Formula</th>
-                  {/*  <th>Error Porcentual</th>*/}
+                    <th>Error Porcentual</th>
+                   {/* <th>Formula</th>*/}
                 </tr>
                 </thead>
                 <tbody>
-                {pasos.length > 1 &&  pasos.map((paso, index) => (
-                    <tr key={index} className={`${paso.isT?'isT':''}`}>
+                {pasos.length > 1 && pasos.map((paso, index) => (
+                    <tr key={index} className={`${paso.isT ? 'isT' : ''}`}>
                         <td>{paso.x}</td>
                         <td>{paso.polinomio}</td>
                         <td>{paso.errorAbsoluto.toFixed(10)}</td>
                         <td>{paso.valorAproximado}</td>
-                         <td>
+                         <td>{paso.errorPorcentual.toFixed(5)}%</td>
+                        {/*<td>
                             <MathJaxContext>
                                 <MathJax>{paso.termino}</MathJax>
                             </MathJaxContext>
-                          </td>
-                       {/* <td>{paso.errorPorcentual.toFixed(5)}%</td>*/}
+                        </td>*/}
                     </tr>
                 ))}
                 </tbody>
