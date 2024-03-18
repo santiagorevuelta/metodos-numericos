@@ -20,6 +20,7 @@ function PolinomioTaylor() {
     const [punto, setPunto] = useState('0');
     const [error, setError] = useState('0');
     const [terminoFinal, setTerminoFinal] = useState('');
+    const [formulaFinal, setFormulaFinal] = useState('');
     const config = {
         loader: { load: ["input/asciimath"] }
     };
@@ -64,7 +65,7 @@ function PolinomioTaylor() {
                }
                _paso.push({
                    x: i,
-                   termino: `\\(\\frac{e^x (e)}{${i}!}* (x - ${punto})^${i} = \\frac{(e)}{${i}}(x - 1)^${i}\\)`,
+                   termino: `\\(\\frac{e^x (${Math.exp(Number(punto))})}{${math.factorial(i)}}* (${punto} - x)^${i} = \\frac{(e)}{${i}}(${punto} - 1)^${i}\\)`,
                    polinomio: Acum,
                    valorAproximado: !encontrado ? `EA > Tolerancia` : `EA < Tolerancia`,
                    errorAbsoluto: EA,
@@ -79,14 +80,14 @@ function PolinomioTaylor() {
 
            _paso.push({
                x: i,
-               termino: `\\(\\frac{e^x (e)}{${i}!}* (x - ${punto})^${i} = \\frac{(e)}{${i}}(x - 1)^${i}\\)`,
+               termino: `\\(\\frac{e^x (${Math.exp(Number(punto))})}{${math.factorial(i)}}* (${punto} - x)^${i} = \\frac{(e)}{${i}}(${punto} - 1)^${i}\\)`,
                polinomio: Acum,
                valorAproximado: !encontrado ? `EA > Tolerancia` : `EA < Tolerancia`,
                errorAbsoluto: EA,
                errorPorcentual: Math.abs(EA) / Math.exp(Number(punto)) * 100,
                isT: false,
            })
-
+           calcularFormula(i)
            // @ts-ignore
            setPasos(_paso);
            toast.success('Evaluado!');
@@ -94,23 +95,32 @@ function PolinomioTaylor() {
            toast.warning('Ocurrió un error general');
        }
     };
-/*
+
     function calcularFormula(n: number) {
-        let _formula = '1 + x ';
-        for (let i = 1; i < n; i++) {
-            if (i <= 4) {
-                _formula += `+\\frac{x^${i}}{${i}!}`
-            }
-        }
-        if (n > 4) {
-            _formula += `+...+\\frac{x^n}{n!}`
-        }
-        _formula += `\\approx \\sum_{i=1}^n \\frac{x^i}{i!}`
-        return `$$e^x \\approx ${_formula}$$`
-    }*/
+        setFormulaFinal('load')
+       setTimeout(()=>{
+           let _formula = `1 + ${Number(punto)} `;
+           for (let i = 1; i < n; i++) {
+               //if (i <= 4) {
+               _formula += `+\\frac{${Math.pow(Number(punto), i)}}{${math.factorial(i)}}`
+               // }
+           }
+           /*if (n > 4) {
+               _formula += `+...+\\frac{x^n}{n!}`
+           }*/
+           //_formula += `\\approx \\sum_{i=1}^n \\frac{x^i}{i!}`
+           setFormulaFinal(`$$e^x \\approx ${_formula}$$`)
+       },1500)
+    }
 
     return (
         <div>
+            <Row className={'mt-1 justify-content-center'}>
+                <MathJaxContext config={config}>
+                    <span>Formula taylor</span>
+                    <MathJax>{`$$e^x \\approx 1 + x +\\frac{x^1}{1!}+\\frac{x^2}{2!}+\\frac{x^3}{3!}+\\frac{x^4}{4!}+...+\\frac{x^n}{n!}\\approx \\sum_{i=1}^n \\frac{x^i}{i!}$$`}</MathJax>
+                </MathJaxContext>
+            </Row>
             <Row>
                 <Col>
                     <Form.Label htmlFor="f">Funcion</Form.Label>
@@ -126,7 +136,7 @@ function PolinomioTaylor() {
                     <Form.Control
                         type="numeric"
                         value={punto}
-                        onChange={(e) => setPunto(e.target.value)}
+                        onChange={(e) => setPunto(e.target.value.replaceAll(',','.'))}
                         id="p"
                     />
                 </Col>
@@ -136,7 +146,7 @@ function PolinomioTaylor() {
                         type="numeric"
                         id="e"
                         value={error}
-                        onChange={(e) => setError(e.target.value)}
+                        onChange={(e) => setError(e.target.value.replaceAll(',','.'))}
                     />
                 </Col>
             </Row>
@@ -147,6 +157,7 @@ function PolinomioTaylor() {
                         setPunto('0')
                         setError('0')
                         setPasos([])
+                        setFormulaFinal('')
                         setTerminoFinal('')
                     }}>Limpiar</button>
                 </Col>
@@ -154,17 +165,26 @@ function PolinomioTaylor() {
                     {terminoFinal !== '' && (
                         <Form.Label htmlFor="p">La cantidad de terminos necesarios son: {terminoFinal}</Form.Label>
                     )}
-
                 </Col>
             </Row>
-            <Row className={'mt-4 justify-content-center'}>
+            {formulaFinal !== '' && (formulaFinal == 'load'? (
+                <div className="loader">
+                    <div className="dot dot-1"></div>
+                    <div className="dot dot-2"></div>
+                    <div className="dot dot-3"></div>
+                    <div className="dot dot-4"></div>
+                    <div className="dot dot-5"></div>
+                </div>
+            ) : (
+            <Row className={'mt-1 justify-content-center'} style={{maxWidth: '100vh'}}>
                 <MathJaxContext config={config}>
-                    <span>Formula taylor</span>
-                    <MathJax>{`$$e^x \\approx 1 + x +\\frac{x^1}{1!}+\\frac{x^2}{2!}+\\frac{x^3}{3!}+\\frac{x^4}{4!}+...+\\frac{x^n}{n!}\\approx \\sum_{i=1}^n \\frac{x^i}{i!}$$`}</MathJax>
+                    <span>Formula con valores</span>
+                    <MathJax className={'formula-math'}>{formulaFinal}</MathJax>
                 </MathJaxContext>
-            </Row>
+            </Row>))}
+
             <br/>
-            <Table>
+            {pasos.length > 1 && (<Table>
                 <thead>
                 <tr>
                     <th>Cantidad de terminos</th>
@@ -172,18 +192,18 @@ function PolinomioTaylor() {
                     <th>Error Absoluto</th>
                     <th>Tolerancia</th>
                     <th>Error Porcentual</th>
-                   {/* <th>Formula</th>*/}
+                    {/*<th>Formula</th>*/}
                 </tr>
                 </thead>
                 <tbody>
-                {pasos.length > 1 && pasos.map((paso, index) => (
+                {pasos.map((paso, index) => (
                     <tr key={index} className={`${paso.isT ? 'isT' : ''}`}>
                         <td>{paso.x}</td>
-                        <td>{paso.polinomio}</td>
+                        <td>{paso.polinomio.toFixed(10)}</td>
                         <td>{paso.errorAbsoluto.toFixed(10)}</td>
                         <td>{paso.valorAproximado}</td>
                          <td>{paso.errorPorcentual.toFixed(5)}%</td>
-                        {/*<td>
+                       {/* <td>
                             <MathJaxContext>
                                 <MathJax>{paso.termino}</MathJax>
                             </MathJaxContext>
@@ -191,7 +211,7 @@ function PolinomioTaylor() {
                     </tr>
                 ))}
                 </tbody>
-            </Table>
+            </Table>)}
         </div>
     );
 }
