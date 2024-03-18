@@ -16,7 +16,7 @@ function PolinomioTaylor() {
         errorPorcentual: 1,
         isT: false,
     }]);
-    const [funcion, setFuncion] = useState('exp(x)');
+    const [funcion, setFuncion] = useState('exp');
     const [punto, setPunto] = useState('0');
     const [error, setError] = useState('0');
     const [terminoFinal, setTerminoFinal] = useState('');
@@ -32,9 +32,15 @@ function PolinomioTaylor() {
            if (funcion === '' || error === 0 || error === '0') {
                return toast.warning('Algunos valores no pueden estar en cero!');
            }
+           try {
+               eval(`Math.${funcion}(0)`)
+           }catch (e) {
+               return toast.warning('Error la funcion no es valida!');
+           }
+
            const _paso = [{
                x: 0,
-               termino: `\\(\\frac{(e^x - ${punto})}{1}* 1 = e\\)`,
+               termino: `\\(\\frac{(${funcion}^x - ${punto})}{1}* 1 = e\\)`,
                polinomio: 1,
                valorAproximado: '',
                errorAbsoluto: 1,
@@ -49,14 +55,14 @@ function PolinomioTaylor() {
                Acum = 0
                EA = 0
                if (i == 1) {
-                   EA = Math.exp(Number(punto)) - i
+                   EA = eval(`Math.${funcion}(${Number(punto)}) - ${i}`)
                    Acum = i
                } else {
                    let sum = parseFloat(String(punto))
                    if (i > 2) sum = sum - parseFloat(String(punto))
                    sum += _paso[_paso.length - 1].polinomio + (Math.pow(Number(punto), i) / math.factorial(i))
                    Acum = sum
-                   EA = Math.exp(Number(punto)) - sum;
+                   EA =  eval(`Math.${funcion}(${Number(punto)}) - ${sum}`)
                }
 
                if (EA < parseFloat(String(error))) {
@@ -65,26 +71,26 @@ function PolinomioTaylor() {
                }
                _paso.push({
                    x: i,
-                   termino: `\\(\\frac{e^x (${Math.exp(Number(punto))})}{${math.factorial(i)}}* (${punto} - x)^${i} = \\frac{(e)}{${i}}(${punto} - 1)^${i}\\)`,
+                   termino: `\\(\\frac{${funcion}^x (${eval(`Math.${funcion}(${Number(punto)})`)})}{${math.factorial(i)}}* (${punto} - x)^${i} = \\frac{(e)}{${i}}(${punto} - 1)^${i}\\)`,
                    polinomio: Acum,
                    valorAproximado: !encontrado ? `EA > Tolerancia` : `EA < Tolerancia`,
                    errorAbsoluto: EA,
-                   errorPorcentual: Math.abs(EA)/ Math.exp(Number(punto)) * 100,
+                   errorPorcentual: Math.abs(EA) / eval(`Math.${funcion}(${Number(punto)})`) * 100,
                    isT: encontrado,
                })
                i++
            }
            //Para calcular el ultimo termino
            Acum = _paso[_paso.length - 1].polinomio + (Math.pow(Number(punto), i) / math.factorial(i))
-           EA = Math.exp(Number(punto)) - Acum;
+           EA = eval(`Math.${funcion}(${Number(punto)})`) - Acum;
 
            _paso.push({
                x: i,
-               termino: `\\(\\frac{e^x (${Math.exp(Number(punto))})}{${math.factorial(i)}}* (${punto} - x)^${i} = \\frac{(e)}{${i}}(${punto} - 1)^${i}\\)`,
+               termino: `\\(\\frac{${funcion}^x (${eval(`Math.${funcion}(${Number(punto)})`)})}{${math.factorial(i)}}* (${punto} - x)^${i} = \\frac{(e)}{${i}}(${punto} - 1)^${i}\\)`,
                polinomio: Acum,
                valorAproximado: !encontrado ? `EA > Tolerancia` : `EA < Tolerancia`,
                errorAbsoluto: EA,
-               errorPorcentual: Math.abs(EA) / Math.exp(Number(punto)) * 100,
+               errorPorcentual: Math.abs(EA) / eval(`Math.${funcion}(${Number(punto)})`) * 100,
                isT: false,
            })
            calcularFormula(i)
@@ -109,7 +115,7 @@ function PolinomioTaylor() {
                _formula += `+...+\\frac{x^n}{n!}`
            }*/
            //_formula += `\\approx \\sum_{i=1}^n \\frac{x^i}{i!}`
-           setFormulaFinal(`$$e^x \\approx ${_formula}$$`)
+           setFormulaFinal(`$$${funcion}^x \\approx ${_formula}$$`)
        },1500)
     }
 
