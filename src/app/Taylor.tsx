@@ -7,132 +7,159 @@ import {MathJax, MathJaxContext} from "better-react-mathjax";
 import data from '@/app/data'
 import {Button} from "@restart/ui";
 
+let initial = {
+    x: 0,
+    valor_teorico: 0,
+    valor_experimental: 0,
+    polinomio: 0,
+    tolerancia: "",
+    errorPorcentual: 1,
+    isT: false,
+}
+
 function PolinomioTaylor() {
-    const [pasos, setPasos] = useState([{
-        x: 0,
-        termino: ``,
-        polinomio: 1,
-        valorAproximado: '',
-        errorAbsoluto: 1,
-        errorPorcentual: 1,
-        isT: false,
-    }]);
-    const [funcion, setFuncion] = useState('exp');
-    const [punto, setPunto] = useState('0');
-    const [error, setError] = useState('0');
+    const [pasos, setPasos] = useState([initial]);
+    const [funcion, setFuncion] = useState('');
+    const [punto, setPunto] = useState('1');
+    const [error, setError] = useState('0.0001');
     const [terminoFinal, setTerminoFinal] = useState('');
     const [formulaFinal, setFormulaFinal] = useState('');
     const [verLista, setVerLista] = useState(false);
     const config = {
-        loader: { load: ["input/asciimath"] }
+        loader: {load: ["input/asciimath"]}
     };
 
     const calcularTaylor = () => {
         setPasos([]);
-       try {
-           // @ts-ignore
-           if (funcion === '' || error === 0 || error === '0') {
-               return toast.warning('Algunos valores no pueden estar en cero!');
-           }
-           try {
-               eval(`Math.${funcion}(0)`)
-           }catch (e) {
-               return toast.warning('Error la funcion no es valida!');
-           }
+        try {
+            // @ts-ignore
+            if (funcion === '' || error === '' || error === '0' || punto === '') {
+                setFormulaFinal('')
+                setTerminoFinal('')
+                return toast.warning('Algunos valores no pueden estar en cero!');
+            }
 
-           const _paso = [{
-               x: 0,
-               termino: `\\(\\frac{(${funcion}^x - ${punto})}{1}* 1 = e\\)`,
-               polinomio: 1,
-               valorAproximado: '',
-               errorAbsoluto: 1,
-               errorPorcentual: 1,
-               isT: false,
-           }]
-           let i = 1
-           let encontrado = false
-           let Acum = 0
-           let EA = 0
-           while (!encontrado) {
-               Acum = 0
-               EA = 0
-               if (i == 1) {
-                   EA = eval(`Math.${funcion}(${Number(punto)}) - ${i}`)
-                   Acum = i
-               } else {
-                   let sum = parseFloat(String(punto))
-                   if (i > 2) sum = sum - parseFloat(String(punto))
-                   sum += _paso[_paso.length - 1].polinomio + (Math.pow(Number(punto), i) / math.factorial(i))
-                   Acum = sum
-                   EA =  eval(`Math.${funcion}(${Number(punto)}) - ${sum}`)
-               }
+            let valor_x = parseFloat(String(punto))
+            try {
+                math.evaluate(funcion, {x: valor_x});
+            } catch (error) {
+                // @ts-ignore
+                return toast.error("Error al evaluar la expresión: " + error.message);
+            }
+            let fn_eval = math.evaluate(funcion, {x: punto})
+            const _paso = [{
+                x: 0,
+                valor_teorico: valor_x,
+                valor_experimental: (fn_eval-1),
+                polinomio: 1,
+                tolerancia: "",
+                errorPorcentual: 0,
+                isT: false,
+            },{
+                x: 1,
+                valor_teorico: 1 + valor_x,
+                valor_experimental: fn_eval - 2,
+                polinomio: 1+valor_x,
+                tolerancia: "",
+                errorPorcentual: Math.abs(1+valor_x) / Math.abs(fn_eval) * 100,
+                isT: false,
+            }]
+            let i = 1
+            let encontrado = false
+            let Acum = 0
+            let EA = 0 //Valor experimental
+            let n_factorial = 2;
+            while (!encontrado) {
+                //let sum = valor_x
+                //if (i >= 2) sum = sum - valor_x
+                let res = Math.pow(valor_x, i)
+                let n_fac = math.factorial(n_factorial)
+                let sum = _paso[i].polinomio + (res/n_fac)
+                Acum = sum
+                EA = fn_eval - sum
 
-               if (EA < parseFloat(String(error))) {
-                   encontrado = !encontrado
-                   setTerminoFinal(String(i))
-               }
-               _paso.push({
-                   x: i,
-                   termino: `\\(\\frac{${funcion}^x (${eval(`Math.${funcion}(${Number(punto)})`)})}{${math.factorial(i)}}* (${punto} - x)^${i} = \\frac{(e)}{${i}}(${punto} - 1)^${i}\\)`,
-                   polinomio: Acum,
-                   valorAproximado: !encontrado ? `EA > Tolerancia` : `EA < Tolerancia`,
-                   errorAbsoluto: EA,
-                   errorPorcentual: Math.abs(EA) / eval(`Math.${funcion}(${Number(punto)})`) * 100,
-                   isT: encontrado,
-               })
-               i++
-           }
-           //Para calcular el ultimo termino
-           Acum = _paso[_paso.length - 1].polinomio + (Math.pow(Number(punto), i) / math.factorial(i))
-           EA = eval(`Math.${funcion}(${Number(punto)})`) - Acum;
+                if (EA < parseFloat(String(error))) {
+                    encontrado = !encontrado
+                    setTerminoFinal(String(i + 1))
+                }
+                _paso.push({
+                    x: i + 1,
+                    valor_teorico: Acum,
+                    valor_experimental: EA,
+                    polinomio: Acum,
+                    tolerancia: !encontrado ? `EA > T` : `EA < T`,
+                    errorPorcentual: Math.abs(EA) / Math.abs(fn_eval) * 100,
+                    isT: encontrado,
+                })
+                i++
+                n_factorial++
+                if (i >= 1000) {
+                    setTerminoFinal('')
+                    toast.warning(`Fuera de rango, el limite supera las ${i} iteraciones`);
+                    break
+                }
+            }
+            let res = Math.pow(valor_x, i)
+            let n_fac= math.factorial(n_factorial)
+            Acum = _paso[i].polinomio + (res/n_fac)
+            EA = fn_eval - Acum;
 
-           _paso.push({
-               x: i,
-               termino: `\\(\\frac{${funcion}^x (${eval(`Math.${funcion}(${Number(punto)})`)})}{${math.factorial(i)}}* (${punto} - x)^${i} = \\frac{(e)}{${i}}(${punto} - 1)^${i}\\)`,
-               polinomio: Acum,
-               valorAproximado: !encontrado ? `EA > Tolerancia` : `EA < Tolerancia`,
-               errorAbsoluto: EA,
-               errorPorcentual: Math.abs(EA) / eval(`Math.${funcion}(${Number(punto)})`) * 100,
-               isT: false,
-           })
-           calcularFormula(i)
-           // @ts-ignore
-           setPasos(_paso);
-           toast.success('Evaluado!');
-       }catch (e) {
-           toast.warning('Ocurrió un error general');
-       }
+            _paso.push({
+                x: i + 1,
+                valor_teorico: Acum,
+                valor_experimental: EA,
+                polinomio: Acum,
+                tolerancia: !encontrado ? `EA > T` : `EA < T`,
+                errorPorcentual: Math.abs(EA) / Math.abs(fn_eval) * 100,
+                isT: false,
+            })
+            calcularFormula(i>=50?50:i)
+            // @ts-ignore
+            setPasos(_paso.splice(0,50));
+            toast.success('Evaluado!');
+        } catch (e) {
+            // @ts-ignore
+            toast.warning(`Ocurrió un error general ${e.message}`);
+        }
     };
 
     function calcularFormula(n: number) {
         setFormulaFinal('load')
-       setTimeout(()=>{
-           let _formula = `1 + ${Number(punto)} `;
-           for (let i = 1; i < n; i++) {
-               //if (i <= 4) {
-               _formula += `+\\frac{${Math.pow(Number(punto), i)}}{${math.factorial(i)}}`
-               // }
-           }
-           /*if (n > 4) {
-               _formula += `+...+\\frac{x^n}{n!}`
-           }*/
-           //_formula += `\\approx \\sum_{i=1}^n \\frac{x^i}{i!}`
-           setFormulaFinal(`$$${funcion}^x \\approx ${_formula}$$`)
-       },1500)
+        setTimeout(() => {
+            let _formula = `1 + ${Number(punto)} `;
+            for (let i = 1; i < n; i++) {
+                _formula += `+\\frac{${Math.pow(Number(punto), i)}}{${math.factorial(i)}}`
+            }
+            setFormulaFinal(`$$${funcion} \\approx ${_formula}$$`)
+        }, 1500)
     }
 
     return (
         <div>
-            <Row className={'mt-1 justify-content-center'}>
-                <MathJaxContext config={config}>
-                    <span>Formula taylor</span>
-                    <MathJax>{`$$e^x \\approx 1 + x +\\frac{x^1}{1!}+\\frac{x^2}{2!}+\\frac{x^3}{3!}+\\frac{x^4}{4!}+...+\\frac{x^n}{n!}\\approx \\sum_{i=1}^n \\frac{x^i}{i!}$$`}</MathJax>
-                </MathJaxContext>
-            </Row>
-            <Row>
-                <Col>
-                    <Form.Label htmlFor="f">{verLista?'Seleccione la función':'Escriba la función'}</Form.Label>
-                    <InputGroup>
+            <Form>
+                <Row className={'mt-1'}>
+                    <Col>
+                        <Form.Label htmlFor="f">{verLista ? 'Seleccione la función' : 'Escriba la función'}</Form.Label>
+                        <InputGroup>
+                            <Form.Control
+                                type="text"
+                                placeholder={'Ejemplo: e^x'}
+                                value={funcion}
+                                onChange={(e) => setFuncion(e.target.value)}
+                                id="f"
+                            />
+                            <Button className={'btn btn-dark'} id="bti" onClick={() => {
+                                setPasos([])
+                                setFormulaFinal('')
+                                setTerminoFinal('')
+                            }}>
+                                Limpiar
+                            </Button>
+                            <Button className={'btn btn-primary'} id="bti" onClick={() => calcularTaylor()}>
+                                Evaluar
+                            </Button>
+                        </InputGroup>
+                        {/*<InputGroup>
                         {verLista ? (<Form.Select aria-label="Default select example"
                                      value={funcion}
                                      onChange={(e) => setFuncion(e.target.value)}>
@@ -151,86 +178,80 @@ function PolinomioTaylor() {
                         }}>
                             {verLista?'Ocultar':'Ver lista'}
                         </Button>
-                    </InputGroup>
+                    </InputGroup>*/}
+                    </Col>
+                </Row>
+                <Row className={'mt-1'}>
+                    <Col>
+                        <Form.Label htmlFor="p">Ejemplos</Form.Label>
+                        <Form.Select aria-label="Default select example"
+                                     onChange={(e) => setFuncion(`${funcion}${e.target.value}`)}>
+                            <option value={''}>Lista</option>
+                            {data.map(item => (<option key={item.value} value={item.value}>{item.value}</option>))}
+                        </Form.Select>
+                    </Col>
+                    <Col>
+                        <Form.Label htmlFor="p">Valor de x</Form.Label>
+                        <Form.Control
+                            type="numeric"
+                            value={punto}
+                            onChange={(e) => setPunto(e.target.value.replaceAll(',', '.'))}
 
-                </Col>
-                <Col>
-                    <Form.Label htmlFor="p">Valor de x</Form.Label>
-                    <Form.Control
-                        type="numeric"
-                        value={punto}
-                        onChange={(e) => setPunto(e.target.value.replaceAll(',','.'))}
-                        id="p"
-                    />
-                </Col>
-                <Col>
-                    <Form.Label htmlFor="e">Error</Form.Label>
-                    <Form.Control
-                        type="numeric"
-                        id="e"
-                        value={error}
-                        onChange={(e) => setError(e.target.value.replaceAll(',','.'))}
-                    />
-                </Col>
-            </Row>
-            <Row className={'mt-4'}>
-                <Col sm={4} style={{display:'flex',justifyContent:'space-between'}}>
-                    <button className={'btn btn-primary'} onClick={calcularTaylor}>Evaluar</button>
-                    <button className={'btn btn-secondary'} onClick={()=>{
-                        setPunto('0')
-                        setError('0')
-                        setPasos([])
-                        setFormulaFinal('')
-                        setTerminoFinal('')
-                    }}>Limpiar</button>
-                </Col>
-                <Col>
-                    {terminoFinal !== '' && (
-                        <Form.Label htmlFor="p">La cantidad de terminos necesarios son: {terminoFinal}</Form.Label>
-                    )}
-                </Col>
-            </Row>
-            {formulaFinal !== '' && (formulaFinal == 'load'? (
-                <div className="loader">
-                    <div className="dot dot-1"></div>
-                    <div className="dot dot-2"></div>
-                    <div className="dot dot-3"></div>
-                    <div className="dot dot-4"></div>
-                    <div className="dot dot-5"></div>
-                </div>
-            ) : (
-            <Row className={'mt-1 justify-content-center'} style={{maxWidth: '100vh'}}>
-                <MathJaxContext config={config}>
-                    <span>Formula con valores</span>
-                    <MathJax className={'formula-math'}>{formulaFinal}</MathJax>
-                </MathJaxContext>
-            </Row>))}
-
+                            id="p"
+                        />
+                    </Col>
+                    <Col>
+                        <Form.Label htmlFor="e">Error</Form.Label>
+                        <Form.Control
+                            type="numeric"
+                            id="e"
+                            value={error}
+                            onChange={(e) => setError(e.target.value.replaceAll(',', '.'))}
+                        />
+                    </Col>
+                </Row>
+                <Row className={'mt-2 justify-content-center'}>
+                    <Col>
+                        {terminoFinal !== '' && (
+                            <Form.Label htmlFor="p">La cantidad de terminos necesarios son: {terminoFinal}</Form.Label>
+                        )}
+                    </Col>
+                </Row>
+                {formulaFinal !== '' && (formulaFinal == 'load' ? (
+                    <div className="loader">
+                        <div className="dot dot-1"></div>
+                        <div className="dot dot-2"></div>
+                        <div className="dot dot-3"></div>
+                        <div className="dot dot-4"></div>
+                        <div className="dot dot-5"></div>
+                    </div>
+                ) : (
+                    <Row className={'mt-1 justify-content-center'} style={{maxWidth: '100vh'}}>
+                        <MathJaxContext config={config}>
+                            <span>Formula con valores</span>
+                            <MathJax className={'formula-math'}>{formulaFinal}</MathJax>
+                        </MathJaxContext>
+                    </Row>))}
+            </Form>
             <br/>
             {pasos.length > 1 && (<Table>
                 <thead>
                 <tr>
-                    <th>Cantidad de terminos</th>
-                    <th>Polinomio de Taylor</th>
-                    <th>Error Absoluto</th>
+                    <th># Termino</th>
+                    <th>Resultado</th>
+                    <th>Valor experimental</th>
+                    <th>Error</th>
                     <th>Tolerancia</th>
-                    <th>Error Porcentual</th>
-                    {/*<th>Formula</th>*/}
                 </tr>
                 </thead>
                 <tbody>
                 {pasos.map((paso, index) => (
                     <tr key={index} className={`${paso.isT ? 'isT' : ''}`}>
                         <td>{paso.x}</td>
-                        <td>{paso.polinomio.toFixed(10)}</td>
-                        <td>{paso.errorAbsoluto.toFixed(10)}</td>
-                        <td>{paso.valorAproximado}</td>
-                         <td>{paso.errorPorcentual.toFixed(5)}%</td>
-                       {/* <td>
-                            <MathJaxContext>
-                                <MathJax>{paso.termino}</MathJax>
-                            </MathJaxContext>
-                        </td>*/}
+                        <td>{paso.valor_teorico}</td>
+                        <td>{paso.x === 0 ? paso.valor_experimental : paso.valor_experimental.toFixed(15)}</td>
+                        <td>{`${paso.errorPorcentual.toFixed(10)}%`}</td>
+                        <td>{paso.tolerancia}</td>
                     </tr>
                 ))}
                 </tbody>
